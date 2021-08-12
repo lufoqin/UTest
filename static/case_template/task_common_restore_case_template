@@ -1,0 +1,106 @@
+
+    @pytest.mark.run(order=$order)
+    def $casename(self):
+        test_case = $testcase
+        html = HtmlCreator()
+        error_infos = html.simple_add('h2', '用例执行信息')
+        try:
+            iteration = int(test_case['iteration'])
+        except Exception as e:
+            log.error("迭代次数类型错误，设置为默认迭代次数1,错误信息: {}".format(e))
+            iteration = 1
+        if iteration == 0:
+            pytest.skip(msg="iteration设置为0，不执行该用例")
+        log.info(Template("******** task_restore 正在执行：$$name用例 ********").substitute(name=test_case['casename']))
+
+        test_case = PreProcess().pre_process(test_case, [common_interface_vars], self)
+
+        api_info = {
+            "url": test_case['url'],
+            "method": test_case['method'],
+            "params": test_case['params'],
+            "header": test_case['header']
+        }
+
+        log.info('task_restore api 请求信息: {}'.format(api_info))
+
+        error_infos = html.simple_add('h3', '用例接口请求信息')
+        error_infos = html.simple_add('li', api_info)
+        for index in range(0, iteration):
+            is_success = True
+            log.info("执行第 {} 次请求".format(index + 1))
+            error_infos = html.simple_add('h3', '执行第 {} 次请求信息'.format(index+1))
+            with allure.step("执行用例：第 {} 次执行请求".format(index+1)):
+                pass
+            try:
+                res = ApiHandler(api_info).api_request()
+            except Exception as e:
+                log.error(Template("task_restore api 请求异常,异常信息: $$e").substitute(e=e))
+                if index != iteration-1:
+                    continue
+                res = ''
+
+            if res != '':  # 如果接口请求失败，则不进行下面处理，直接添加错误信息
+                if res.status_code != 200:
+                    log.error(Template("task_restore api 请求失败, 响应内容: $$content").substitute(content=res.text))
+                    RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                              test_case['header'], res.text, res.status_code, res.elapsed.total_seconds()],
+                                  "xfail")
+                    error_infos = html.simple_add('li', "响应状态码不等于200", 'red')
+                    is_success = False
+                    check.equal(1, 2, msg="task_restore api 响应状态码不等于200，请检查！")
+
+                res_json = res.json()
+                log.info('task_restore api 响应内容: {}'.format(res_json))
+
+                error_infos = html.simple_add('h3', '接口响应内容')
+                error_infos = html.simple_add('li', res_json)
+
+                flag, error_info = ResultProcess().result_check(test_case, res)
+                flag = flag and is_success
+
+                PostProcess().post_process(test_case, res_json, [common_interface_vars])
+
+                if not flag:
+                    error_infos = html.simple_add('li', error_info, 'red')
+                    log.info('task_restore_case 用例执行失败，失败信息：{}'.format(error_infos))
+                    RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                              test_case['header'], res.text, res.status_code, res.elapsed.total_seconds(), error_infos],
+                                  "xfail")
+                    check.equal(1, 2, msg="task_restore 用例执行失败")
+                else:
+                    error_infos = html.simple_add('li', error_info, 'green')
+                    log.info('task_restore_case 用例执行成功')
+                    RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                              test_case['header'], res.text, res.status_code, res.elapsed.total_seconds(), error_infos],
+                                  "xpass")
+
+                if hasattr(self, 'error_collector'):
+                    runtime_error = self.error_collector.container
+                    if runtime_error:
+                        html.simple_add('h3', 'runtime_error')
+                        error_infos = html.simple_add('li', runtime_error, 'red')
+
+                if test_case.get('wait_time'):
+                    wait_time = float(test_case['wait_time'])
+                    log.info("用例设置了等待时间，等待{}秒,请等待。。。".format(str(wait_time)))
+                    time.sleep(wait_time)
+
+                if flag:
+                    break
+
+            else:
+                error_infos = html.simple_add('li', "api请求失败\n", 'red')
+                RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'],
+                            test_case['params'], test_case['header'], "request error"], "xfail")
+
+                is_success = False
+                check.equal(1, 2, "task_restore Exception returned on API request")
+
+                if test_case.get('wait_time'):
+                    wait_time = float(test_case['wait_time'])
+                    log.info("用例设置了等待时间，等待{}秒,请等待。。。".format(str(wait_time)))
+                    time.sleep(wait_time)
+
+            allure.attach(error_infos, "测试结果", allure.attachment_type.HTML)
+

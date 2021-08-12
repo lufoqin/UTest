@@ -1,0 +1,16 @@
+class InterfaceVars(object):
+    def __init__(self):
+        self.interface_vars = {}
+        self.backup_vars = {}
+
+
+class CommonInterfaceVars(object):
+    def __init__(self):
+        self.interface_vars = PreProcess().read_task_common_global_vars(self) or {}
+
+
+ivs = InterfaceVars()
+common_interface_vars = CommonInterfaceVars()
+
+
+class TestClass(object):

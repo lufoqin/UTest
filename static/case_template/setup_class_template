@@ -1,0 +1,7 @@
+
+
+    def setup_class(self):
+        local_vars = $local_vars
+        if local_vars:
+            log.info('setup class start to parse local vars')
+            PreProcess().store_local_var(local_vars, ivs, common_interface_vars)

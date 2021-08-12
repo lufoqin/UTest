@@ -1,0 +1,61 @@
+
+
+    def setup_class(self):
+        test_cases = $testsuite_init
+        log.info('===============开始执行setup class 初始化用例===============')
+        for test_case in test_cases:
+            log.info(Template("正在执行：$$name用例").substitute(name=test_case['casename']))
+            try:
+                test_case = PreProcess().pre_process(test_case, [ivs, common_interface_vars])
+            except Exception as e:
+                log.error(Template("setup_class Exception returned on var_replace,error info: $$e").substitute(e=e))
+
+            api_info = {
+                "url": test_case['url'],
+                "method": test_case['method'],
+                "params": test_case['params'],
+                "header": test_case['header']
+            }
+
+            log.info('setup_class api 请求信息: {}'.format(api_info))
+
+            try:
+                res = ApiHandler(api_info).api_request()
+            except Exception as e:
+                log.error(Template("setup_class用例接口请求超时,错误信息如下: $$e").substitute(e=e))
+                #  check.equal(1, 2, "setup_class Exception returned on API request")
+                RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'],
+                        test_case['params'], test_case['header'], "request error"], "fail")
+                continue
+            if res.status_code != 200:
+                log.error(Template("setup_class用例接口请求失败, 响应内容如下: $$content").substitute(content=res.text))
+                #  check.equal(1, 2, msg="setup_class api response status_code not equal 200, fail")
+                RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                      test_case['header'], res.text, res.status_code, res.elapsed.total_seconds()],
+                          "fail")
+                continue
+
+            try:
+                res_json = res.json()
+                log.info('setup_class api请求响应内容: {}'.format(res_json))
+            except Exception as e:
+                log.error(Template("setup_class 响应内容格式化为json失败，错误信息: $$e").substitute(e=e))
+                RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                      test_case['header'], res.text, res.status_code, res.elapsed.total_seconds(), "响应内容格式化为json失败"],
+                          "fail")
+                continue
+
+            PostProcess().post_process(test_case, res_json, [ivs, common_interface_vars])
+            log.info('setup_class api请求成功')
+            log.debug(Template("setup_class interface vars: $$interface_var").substitute(interface_var=ivs.interface_vars))
+
+            RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                      test_case['header'], res.text, res.status_code, res.elapsed.total_seconds()],
+                          "pass")
+            if test_case.get('wait_time'):
+                wait_time = float(test_case['wait_time'])
+                log.info("用例设置了等待时间，等待{}秒,请等待。。。".format(str(wait_time)))
+                time.sleep(wait_time)
+
+        ivs.backup_vars = ivs.interface_vars
+        log.info('===============开始执行测试用例===============')

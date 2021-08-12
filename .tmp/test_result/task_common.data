@@ -1,0 +1,60 @@
+global_init_get_token<#separator#>http://192.168.203.38/api/portal/identity/user/login.sso<#separator#>POST<#separator#>{'loginName': 'admin', 'password': '123456'}<#separator#>{'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}<#separator#>{"token":"d45a333e-1e11-39fa-95fc-70fd29a5dce7","userId":"cc81efe719bf4b05a3c21524ccf6c1ea","redirectUrl":null,"sessionUser":{"userId":"cc81efe719bf4b05a3c21524ccf6c1ea","userName":"admin","token":{"tokenId":"d45a333e-1e11-39fa-95fc-70fd29a5dce7","expireTime":1628737607744}},"tokenUser":{"userInfo":{"id":"cc81efe719bf4b05a3c21524ccf6c1ea","loginName":"admin","gender":true,"email":"gcloudtest01@gdeii.com.cn","mobile":"18922988888","roleId":"superadmin","disable":false,"realName":"超级管理员","domain":null,"tenants":{"userTenantItem":[{"tenantId":"f6d4b7a3-db29-476b-aaa2-392fad843442","tenantName":"tenantAdmin"}]}},"expressTime":1628737607744},"RequestId":"4759bc07-7d6b-4c11-a6dd-0b5c6601be06"}<#separator#>200<#separator#>0.033919<#separator#><!DOCTYPE html>
+<html>
+  <head>
+    <title>Report</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <h2 style="">用例执行信息</h2>
+    <h3 style="">用例接口请求信息</h3>
+    <pre style="">{
+  &quot;url&quot;: &quot;http://192.168.203.38/api/portal/identity/user/login.sso&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;params&quot;: {
+    &quot;loginName&quot;: &quot;admin&quot;,
+    &quot;password&quot;: &quot;123456&quot;
+  },
+  &quot;header&quot;: {
+    &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded; charset=UTF-8&quot;
+  }
+}</pre>
+    <h3 style="">执行第 1 次请求信息</h3>
+    <h3 style="">接口响应内容</h3>
+    <pre style="">{
+  &quot;token&quot;: &quot;d45a333e-1e11-39fa-95fc-70fd29a5dce7&quot;,
+  &quot;userId&quot;: &quot;cc81efe719bf4b05a3c21524ccf6c1ea&quot;,
+  &quot;redirectUrl&quot;: null,
+  &quot;sessionUser&quot;: {
+    &quot;userId&quot;: &quot;cc81efe719bf4b05a3c21524ccf6c1ea&quot;,
+    &quot;userName&quot;: &quot;admin&quot;,
+    &quot;token&quot;: {
+      &quot;tokenId&quot;: &quot;d45a333e-1e11-39fa-95fc-70fd29a5dce7&quot;,
+      &quot;expireTime&quot;: 1628737607744
+    }
+  },
+  &quot;tokenUser&quot;: {
+    &quot;userInfo&quot;: {
+      &quot;id&quot;: &quot;cc81efe719bf4b05a3c21524ccf6c1ea&quot;,
+      &quot;loginName&quot;: &quot;admin&quot;,
+      &quot;gender&quot;: true,
+      &quot;email&quot;: &quot;gcloudtest01@gdeii.com.cn&quot;,
+      &quot;mobile&quot;: &quot;18922988888&quot;,
+      &quot;roleId&quot;: &quot;superadmin&quot;,
+      &quot;disable&quot;: false,
+      &quot;realName&quot;: &quot;超级管理员&quot;,
+      &quot;domain&quot;: null,
+      &quot;tenants&quot;: {
+        &quot;userTenantItem&quot;: [
+          {
+            &quot;tenantId&quot;: &quot;f6d4b7a3-db29-476b-aaa2-392fad843442&quot;,
+            &quot;tenantName&quot;: &quot;tenantAdmin&quot;
+          }
+        ]
+      }
+    },
+    &quot;expressTime&quot;: 1628737607744
+  },
+  &quot;RequestId&quot;: &quot;4759bc07-7d6b-4c11-a6dd-0b5c6601be06&quot;
+}</pre>
+  </body>
+</html><#separator#>XPASS<#line-separator#>

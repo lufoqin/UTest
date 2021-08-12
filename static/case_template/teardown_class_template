@@ -1,0 +1,60 @@
+
+
+    def teardown_class(self):
+        # ivs.interface_vars = ivs.backup_vars
+        test_cases = $testsuite_restore
+        for test_case in test_cases:
+            log.info(Template("******** teardown_class 正在执行：$$name用例 ********").substitute(name=test_case['casename']))
+            try:
+                test_case = PreProcess().pre_process(test_case, [ivs, common_interface_vars], self)
+            except Exception as e:
+                log.error(Template("teardown_class 进行变量替换时出现异常,异常信息: $$e").substitute(e=e))
+
+            api_info = {
+                "url": test_case['url'],
+                "method": test_case['method'],
+                "params": test_case['params'],
+                "header": test_case['header']
+            }
+
+            log.info('teardown_class api 请求信息: {}'.format(api_info))
+
+            try:
+                res = ApiHandler(api_info).api_request()
+            except Exception as e:
+                log.error(Template("teardown_class api 请求异常,异常信息: $$e").substitute(e=e))
+                RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'],
+                        test_case['params'], test_case['header'], "request error"], "fail")
+                # check.equal(1, 2, "teardown_class api请求异常， 请检查")
+                continue
+            if res.status_code != 200:
+                log.error(Template("teardown_class api 请求失败，响应码不等于200，响应内容: $$content").substitute(
+                    content=res.text))
+                RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                      test_case['header'], res.text, res.status_code, res.elapsed.total_seconds()],
+                          "fail")
+                #check.equal(1, 2, "teardown_class api 响应状态码不等于200，请检查")
+                continue
+
+            try:
+                res_json = res.json()
+                log.info('teardown_class api请求响应内容: {}'.format(res_json))
+            except Exception as e:
+                log.error(Template("teardown_class 响应内容格式化为json失败，错误信息: $$e").substitute(e=e))
+                RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                      test_case['header'], res.text, res.status_code, res.elapsed.total_seconds(), "响应内容格式化为json失败"],
+                          "fail")
+                continue
+
+            PostProcess().post_process(test_case, res_json, [ivs, common_interface_vars])
+            log.info('teardown_class api请求成功')
+            log.debug(Template("teardown_class 接口变量信息: $$interface_var").substitute(
+                interface_var=ivs.interface_vars))
+            RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                      test_case['header'], res.text, res.status_code, res.elapsed.total_seconds()],
+                          "pass")
+
+            if test_case.get('wait_time'):
+                wait_time = float(test_case['wait_time'])
+                log.info("用例设置了等待时间，等待{}秒,请等待。。。".format(str(wait_time)))
+                time.sleep(wait_time)

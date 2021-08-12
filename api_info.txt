@@ -1,0 +1,12 @@
+[
+	{
+		"url": "http://192.168.203.38/api/cost/admin/price/update",
+		"method": "post",
+		"params": {"product": "ECS_MLU", "price": "4.3","effectTime":"2021-05-19 00:00:00"},
+		"header": {
+				"X-Auth-Token": "cfd1fbbe-ebaf-3d5f-9de3-42d9621ea0e3"
+			}
+	}
+]
+
+

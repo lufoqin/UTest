@@ -1,0 +1,148 @@
+
+    @allure.feature("""$module""")
+    @allure.story("$casename")
+    @allure.title("""$description""")
+    @allure.description("""$description,params:$params""")
+    @pytest.mark.run(order=$order)
+    def $casename(self):
+        test_case = $testcase
+        html = HtmlCreator()
+        error_infos = html.simple_add('h2', '用例执行信息')
+        try:
+            iteration = int(test_case['iteration'])
+        except Exception as e:
+            log.error("迭代次数类型错误，设置默认迭代次数1,错误信息: {}".format(e))
+            iteration = 1
+        if iteration == 0:
+            pytest.skip(msg="iteration设置为0，不执行该用例")
+        log.info("="*45)
+        log.info("******** 正在执行：{} ********".format(test_case['casename']))
+
+        init_cases = $init_case
+        restore_cases = $restore_case
+
+        # 执行测试用例中的初始化步骤
+        if init_cases:
+            error_infos = html.simple_add('h3', '预置用例执行信息')
+            for init_case in init_cases:
+                log.info("执行用例中的初始化接口：{}".format(init_case['url']))
+                step_msg = init_case.get('description') or init_case.get('url')
+                with allure.step(step_msg):  # # 在allure中增加初始化的步骤展示
+                    res, infos = self.exec_init_case(init_case)
+
+                    if res is not True:
+                        error_infos = html.simple_add('li', infos, 'red')
+                        RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'],
+                                test_case['params'], test_case['header'], "执行初始化用例失败，错误信息: {}".format(infos)], "fail")
+                        check.equal(1, 2, msg="执行初始化用例失败，错误信息: {}".format(infos))
+                    else:
+                        error_infos = html.simple_add('li', infos, 'green')
+
+        test_case = PreProcess().pre_process(test_case, [ivs, common_interface_vars], self)
+
+        api_info = {
+            "url": test_case['url'],
+            "method": test_case['method'],
+            "params": test_case['params'],
+            "header": test_case['header']
+        }
+        log.info('api请求信息：{}'.format(api_info))
+        error_infos = html.simple_add('h3', '用例接口请求信息')
+        error_infos = html.simple_add('li', api_info)
+        flag = False  # 用于判断接口用例是否执行成功标志
+        for index in range(0, iteration):
+            log.info("执行第 {} 次请求".format(index + 1))
+            error_infos = html.simple_add('h3', '执行第 {} 次请求信息'.format(index+1))
+            with allure.step("执行用例：第 {} 次执行请求".format(index+1)):
+                pass
+            try:
+                res = ApiHandler(api_info).api_request()
+                res_json = res.json()
+                log.info('api响应内容：{}'.format(res_json))
+            except Exception as e:
+                log.error("api请求失败,错误信息: {}".format(e))
+                if index != iteration-1:  # 如果不是最后一次请求失败，则直接进行下一次请求
+                    continue
+                res = ''
+
+            if res != '':  # 如果api请求成功的话，才进行后续的处理，否则直接添加错误信息
+                log.debug("=========={}".format(res))
+                error_infos = html.simple_add('h3', '用例接口响应内容')
+                error_infos = html.simple_add('li', res_json)
+                flag, error_info = ResultProcess().result_check(test_case, res)
+
+                error_infos = html.simple_add('h3', '用例接口验证信息')
+
+                log.info(error_info)
+
+                if flag:
+                    error_infos = html.simple_add('li', error_info, 'green')
+                    RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                          test_case['header'], res.text, res.status_code, res.elapsed.total_seconds(), error_info],
+                              "pass")
+                else:
+                    error_infos = html.simple_add('li', error_info, 'red')
+                    RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'], test_case['params'],
+                                          test_case['header'], res.text, res.status_code, res.elapsed.total_seconds(), error_info],
+                              "fail")
+                    check.equal(1, 2, msg=error_info)
+
+                    log.info('api 请求信息: {}'.format(api_info))
+
+                PostProcess().post_process(test_case, res_json, [ivs, common_interface_vars])
+
+                if test_case.get('wait_time'):
+                    wait_time = float(test_case['wait_time'])
+                    log.info("用例设置了等待时间，等待{}秒,请等待。。。".format(str(wait_time)))
+                    time.sleep(wait_time)
+
+                if flag:
+                    break
+
+            else:
+                log.debug("=========={}".format(res))
+                error_infos = html.simple_add('li', {'错误信息': 'api请求失败'}, 'red')
+                RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'],
+                        test_case['params'], test_case['header'], "request error"], "fail")
+                check.equal(1, 2, msg='api 接口请求失败')
+
+                if test_case.get('wait_time'):
+                    wait_time = float(test_case['wait_time'])
+                    log.info("用例设置了等待时间，等待{}秒,请等待。。。".format(str(wait_time)))
+                    time.sleep(wait_time)
+
+        # 执行测试用例中的数据恢复步骤
+        if restore_cases:
+            error_infos = html.simple_add('h3', '后置用例执行信息')
+            for restore_case in restore_cases:
+                step_msg = restore_case.get('description') or restore_case.get('url')
+                with allure.step(step_msg):  # 在allure中增加恢复的步骤展示
+                    res, infos = self.exec_restore_case(restore_case)
+
+                    if res is not True:
+                        error_infos = html.simple_add('li', infos, 'red')
+                        RS.write_result(file_name, [test_case['casename'], test_case['url'], test_case['method'],
+                                test_case['params'], test_case['header'], "执行恢复用例失败，错误信息: {}".format(infos)], "fail")
+                        check.equal(1, 2, msg="执行恢复用例失败，错误信息: {}".format(infos))
+                    else:
+                        error_infos = html.simple_add('li', infos, 'green')
+
+        if hasattr(self, 'error_collector'):
+            runtime_error = self.error_collector.container
+            if runtime_error:
+                html.simple_add('h3', 'runtime_error')
+                error_infos = html.simple_add('li', runtime_error, 'red')
+
+        if hasattr(ivs, 'error_collector'):
+            store_local_vars_runtime_error = ivs.error_collector.container
+            if store_local_vars_runtime_error:
+                html.simple_add('h3', 'store_local_vars_runtime_error')
+                error_infos = html.simple_add('li', store_local_vars_runtime_error, 'red')
+
+        if hasattr(common_interface_vars, 'error_collector'):
+            read_global_vars_file_runtime_error = common_interface_vars.error_collector.container
+            if read_global_vars_file_runtime_error:
+                html.simple_add('h3', 'read_global_vars_file_runtime_error')
+                error_infos = html.simple_add('li', read_global_vars_file_runtime_error, 'red')
+
+        allure.attach(error_infos, "测试结果", allure.attachment_type.HTML)

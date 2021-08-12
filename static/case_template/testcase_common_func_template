@@ -1,0 +1,144 @@
+
+    def exec_init_case(self, test_case):
+        error_infos = {}
+        log.info("**********执行初始化用例**********")
+        try:
+            test_case = PreProcess().pre_process(test_case, [ivs, common_interface_vars], self)
+        except Exception as e:
+            log.error(Template("exec_init_case 进行变量替换时出现异常，异常信息: $$e").substitute(e=e))
+
+        if hasattr(self, 'error_collector'):
+            runtime_error = self.error_collector.container
+
+        else:
+            runtime_error = {}
+
+        init_api_info = {
+            "url": test_case["url"],
+            "method": test_case["method"],
+            "params": test_case["params"],
+            "header": test_case["header"]
+        }
+        # error_infos += "步骤名称：{}\n".format(test_case.get("description") or test_case.get("url"))
+        # error_infos += "api请求信息：{}\n".format(init_api_info)
+        error_infos["步骤名称"] = test_case.get("description") or test_case.get("url")
+        error_infos["api请求信息"] = init_api_info
+
+        log.info('exec_restore_case api 请求信息: {}'.format(init_api_info))
+
+        try:
+            res = ApiHandler(init_api_info).api_request()
+        except Exception as e:
+            log.error("exec_init_case api 请求异常，异常信息: {}".format(e))
+            # check.equal(1, 2, "exec_init_case api请求时出现异常，请检查")
+            # error_infos += "api请求失败\n"
+            error_infos["api请求失败"] = e
+            if runtime_error:
+                error_infos['runtime_error'] = runtime_error
+            return False, error_infos
+
+        res_json = res.json()
+        # error_infos += "api响应内容：{}\n".format(res.json())
+        error_infos["api响应内容"] = res_json
+        if res.status_code != 200:
+            log.error("exec_init_case api 请求失败，响应状态码不等于200，响应内容: {}".format(res.text))
+            # check.equal(1, 2, "exec_init_case api 响应状态码不等于200，请检查")
+            # error_infos += "响应状态码不等于200\n"
+            error_infos["异常信息"] = "响应状态码不等于200"
+            if runtime_error:
+                error_infos['runtime_error'] = runtime_error
+            return False, error_infos
+
+        log.info('exec_init_case api请求响应内容: {}'.format(res_json))
+
+        flag, error_info = ResultProcess().result_check(test_case, res)
+        # error_infos += error_info
+        error_infos["用例接口验证信息"] = error_info
+        if runtime_error:
+            error_infos['runtime_error'] = runtime_error
+
+        PostProcess().post_process(test_case, res_json, [ivs, common_interface_vars])
+
+        if test_case.get('wait_time'):
+            wait_time = float(test_case['wait_time'])
+            log.info("用例设置了等待时间，等待{}秒,请等待。。。".format(str(wait_time)))
+            time.sleep(wait_time)
+        log.info("**********初始化用例执行完毕**********")
+
+        if not flag:
+            log.info('exec_init_case 用例执行失败，失败信息：{}'.format(error_infos))
+            return False, error_infos
+        else:
+            log.info('exec_init_case 用例执行成功')
+            return True, error_infos
+
+    def exec_restore_case(self, test_case):
+        error_infos = {}
+        log.info("**********执行恢复用例**********")
+        try:
+            test_case = PreProcess().pre_process(test_case, [ivs, common_interface_vars], self)
+        except Exception as e:
+            log.error("exec_restore_case 进行变量替换时出现异常，异常信息: {}".format(e))
+        restore_api_info = {
+            "url": test_case["url"],
+            "method": test_case["method"],
+            "params": test_case["params"],
+            "header": test_case["header"]
+        }
+        if hasattr(self, 'error_collector'):
+            runtime_error = self.error_collector.container
+        else:
+            runtime_error = {}
+
+        # error_infos += "步骤名称：{}\n".format(test_case.get("description") or test_case.get("url"))
+        # error_infos += "api请求信息：{}\n".format(restore_api_info)
+        error_infos["步骤名称"] = test_case.get("description") or test_case.get("url")
+        error_infos["api请求信息"] = restore_api_info
+        log.info('exec_restore_case api 请求信息: {}\n'.format(restore_api_info))
+
+        try:
+            res = ApiHandler(restore_api_info).api_request()
+        except Exception as e:
+            log.error("exec_restore_case api 请求异常，异常信息: {}".format(e))
+            # error_infos += "api请求失败\n"
+            error_infos["api请求失败"] = e
+            if runtime_error:
+                error_infos['runtime_error'] = runtime_error
+            # check.equal(1, 2, "exec_restore_case 请求时出现异常，请检查")
+            return False, error_infos
+
+        res_json = res.json()
+        # error_infos += "api响应信息：{}\n".format(res.json())
+        error_infos["api响应信息"] = res_json
+        if res.status_code != 200:
+            log.error("exec_restore_case api 请求失败，响应状态码不等于200，响应内容: {}".format(res.text))
+            # check.equal(1, 2, "exec_restore_case api 响应状态码不等于200，请检查")
+            # error_infos += "响应状态码不等于200\n"
+            error_infos["异常信息"] = "响应状态码不等于200"
+
+            if runtime_error:
+                error_infos['runtime_error'] = runtime_error
+            return False, error_infos
+
+        log.info('exec_restore_case api请求响应内容: {}'.format(res_json))
+
+        flag, error_info = ResultProcess().result_check(test_case, res)
+        # error_infos += error_info
+        error_infos["用例接口验证信息"] = error_info
+
+        if runtime_error:
+            error_infos['runtime_error'] = runtime_error
+
+        PostProcess().post_process(test_case, res_json, [ivs, common_interface_vars])
+
+        if test_case.get('wait_time'):
+            wait_time = float(test_case['wait_time'])
+            log.info("用例设置了等待时间，等待{}秒,请等待。。。".format(str(wait_time)))
+            time.sleep(wait_time)
+        log.info("**********恢复用例执行完毕**********")
+        if not flag:
+            log.info('exec_restore_case 用例执行失败，失败信息: {}'.format(error_infos))
+            return False, error_infos
+        else:
+            log.info('exec_restore_case 用例执行成功')
+            return True, error_infos
